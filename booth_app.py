@@ -1,25 +1,31 @@
-import logging
 import subprocess
 import time
 import picamera
 import pygame
 from pygame_helpers import rounded_rect
 import RPi.GPIO as GPIO
-GPIO.setmode(GPIO.BCM)
 
 
-class App(object):
+class Colors(object):
+    WHITE = (255, 255, 255)
+    BLACK = (0, 0, 0)
+    RED = (255, 0, 0)
+
+    ORANGE = (200, 50, 20)
+    DARK_GRAY = (1, 1, 1)
+
+
+class Config(object):
     TEMP_DIR = '/dev/shm'
     TARGET_DIR = '/home/photobooth/photos'
     SWITCH_PIN = 4
     LED_PIN = 26
-    stages = ('GREETING', 'PHOTO 1', 'PHOTO 2', 'PHOTO 3', 'PHOTO 4', 'FAREWELL')
     MAX_FPS = 60
-    WHITE = (255, 255, 255)
-    BLACK = (0, 0, 0)
-    DARK_GRAY = (1, 1, 1)
-    RED = (255, 0, 0)
-    ORANGE = (200, 50, 20)
+    PICTURE_RESOLUTION = (1280, 853)
+
+
+class PhotoboothApp(object):
+    stages = ('GREETING', 'PHOTO 1', 'PHOTO 2', 'PHOTO 3', 'PHOTO 4', 'FAREWELL')
 
     def __init__(self):
         self._running = True
@@ -35,28 +41,29 @@ class App(object):
         self._init_gpio()
 
     def _init_gpio(self):
-        GPIO.setup(self.SWITCH_PIN, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-        GPIO.setup(self.LED_PIN, GPIO.OUT)
+        GPIO.setmode(GPIO.BCM)
+        GPIO.setup(Config.SWITCH_PIN, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+        GPIO.setup(Config.LED_PIN, GPIO.OUT)
         self.enable_led(False)
 
+    def _init_camera(self):
+        self.camera = picamera.PiCamera()
+        self.camera.annotate_text_size = 128
+        self.camera.led = True
+        self.camera.vflip = True
+        self.camera.resolution = Config.PICTURE_RESOLUTION
+
     def enable_led(self, mode):
-        GPIO.output(self.LED_PIN, int(not mode))
+        GPIO.output(Config.LED_PIN, int(not mode))
 
     def wait_for_button(self):
         while True:
-            button_pressed = GPIO.input(self.SWITCH_PIN)
+            button_pressed = GPIO.input(Config.SWITCH_PIN)
             if button_pressed:
                 return
             pygame.display.flip()
             time.sleep(0.1)
 
-    def _init_camera(self):
-        self.camera = picamera.PiCamera()
-        self.camera.annotate_text_size = 128
-        self.camera.led = False
-        self.camera.vflip = True
-        self.camera.resolution = (1280, 853)
-        #self.camera.hflip = True
 
     def on_init(self):
         pygame.init()
@@ -69,7 +76,7 @@ class App(object):
         self._background = self.fill_background()
         self._photo_space = self.fill_photo_space()
         self._running = True
-        self.font = pygame.font.Font('concourse.ttf', 115)
+        self.font = pygame.font.Font('fonts/concourse.ttf', 115)
         pygame.mouse.set_visible(False)
         #logging.debug('Cameras: %r' % pygame.camera.list_cameras())
 
@@ -77,7 +84,7 @@ class App(object):
 
     def fill_background(self):
         background = pygame.Surface((self.width, self.height))
-        background_image = pygame.image.load("bg_linen.png").convert()
+        background_image = pygame.image.load("images/background.png").convert()
         for y in range(0, self.height, background_image.get_height()):
             for x in range(0, self.width, background_image.get_width()):
                 background.blit(background_image, (x, y))
@@ -91,10 +98,10 @@ class App(object):
 
         for i, photo in enumerate(photo_files):
             if not photo:
-                photo = "sample%d.jpg" % (i + 1)
+                photo = "images/sample%d.png" % (i + 1)
             self.insert_single_photo(all_photos, photo, i)
 
-        all_photos.set_colorkey(self.BLACK)
+        all_photos.set_colorkey(Colors.BLACK)
         return all_photos
 
     def insert_single_photo(self, surface, filename, number):
@@ -108,6 +115,7 @@ class App(object):
         frame_y = height_gap if number < 2 else (2*height_gap + frame_height)
 
         photo = self.prepare_photo_for_display(filename)
+
         surface.blit(photo, (frame_x, frame_y))
         return surface
 
@@ -117,7 +125,7 @@ class App(object):
         frame_width = int((self.width - 3 * width_gap)/2)
         frame_height = int((self.height - 3 * height_gap)/2)
         frame_surface = pygame.Surface((frame_width, frame_height))
-        frame_surface.fill(self.WHITE)
+        frame_surface.fill(Colors.WHITE)
 
         photo_surface = pygame.image.load(photo_filename)
         self.photos.append(photo_surface)
@@ -132,7 +140,7 @@ class App(object):
         return frame_surface
 
     def take_photo(self, number):
-        self.render_text("Bild %d von %d" % (number, 4), self.BLACK)
+        self.render_text("Bild %d von %d" % (number, 4), Colors.BLACK)
         pygame.display.flip()
         time.sleep(2)
         self.camera.start_preview()
@@ -143,7 +151,7 @@ class App(object):
            time.sleep(1)
         self.camera.annotate_text = ""
 
-        photo_filename = '%s/photo_%d.jpg' % (self.TEMP_DIR, number)
+        photo_filename = '%s/photo_%d.jpg' % (Config.TEMP_DIR, number)
         self.camera.capture(photo_filename)
         self.camera.stop_preview()
         self.insert_single_photo(self._photo_space, photo_filename, number-1)
@@ -159,11 +167,11 @@ class App(object):
             else:
                 self.stage += 1"""
 
-    def on_loop(self):
-        self.clock.tick(self.MAX_FPS)
+    def limit_cpu_usage(self):
+        self.clock.tick(Config.MAX_FPS)
 
     def render_text(self, text, bg_color):
-        font_label = self.font.render(text, True, self.WHITE)
+        font_label = self.font.render(text, True, Colors.WHITE)
         font_width = font_label.get_width()
         font_height = font_label.get_height()
         background_width = font_width + 10 * font_width / 100
@@ -185,7 +193,7 @@ class App(object):
         PRINTER_SIZE = [6, 4]
         image_size = width, height = [size * PRINTER_DPI for size in PRINTER_SIZE]
         print_surface = pygame.Surface(image_size)
-        print_surface.fill(self.WHITE)
+        print_surface.fill(Colors.WHITE)
         for number, photo in enumerate(self.photos):
             width_gap = int(width / 100 * 2)
             height_gap = int(height / 100 * 2)
@@ -200,7 +208,7 @@ class App(object):
             scaled_photo = pygame.transform.scale(photo, (frame_width, frame_height))
             print_surface.blit(scaled_photo, (frame_x, frame_y))
 
-        photo_filename = "%s/%d.jpg" % (self.TARGET_DIR, time.time())
+        photo_filename = "%s/%d.jpg" % (Config.TARGET_DIR, time.time())
         pygame.image.save(print_surface, photo_filename)
         subprocess.call(['/usr/bin/lp', photo_filename])
 
@@ -209,15 +217,14 @@ class App(object):
 
         def greeting():
             self.photos = []
-            self.render_text("Bereit?", bg_color=self.ORANGE)
+            self.render_text("Bereit?", bg_color=Colors.ORANGE)
             pygame.display.flip()
-            #TODO wait for button press...
             self.enable_led(True)
             self.wait_for_button()
             self.enable_led(False)
 
         def farewell():
-            self.render_text("Vielen Dank! Drucke... ", bg_color=self.ORANGE)
+            self.render_text("Vielen Dank! Drucke... ", bg_color=Colors.ORANGE)
             pygame.display.flip()
             self.print_photos()
             self.photos = []
@@ -245,11 +252,11 @@ class App(object):
         while self._running:
             for event in pygame.event.get():
                 self.on_event(event)
-            self.on_loop()
+            self.limit_cpu_usage()
             self.on_render()
         self.on_cleanup()
 
 
 if __name__ == "__main__" :
-    theApp = App()
+    theApp = PhotoboothApp()
     theApp.on_execute()
