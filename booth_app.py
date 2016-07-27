@@ -1,3 +1,4 @@
+import os
 import subprocess
 import sys
 import time
@@ -18,7 +19,7 @@ class Colors(object):
 
 class Config(object):
     TEMP_DIR = '/dev/shm'
-    TARGET_DIR = '/home/photobooth/photos'
+    TARGET_DIR = '~/photos'
     SWITCH_PIN = 4
     LED_PIN = 26
     MAX_FPS = 60
@@ -50,7 +51,7 @@ class PhotoboothApp(object):
     def _init_camera(self):
         self.camera = picamera.PiCamera()
         self.camera.annotate_text_size = 128
-        self.camera.led = True
+        self.camera.led = False
         self.camera.vflip = True
         self.camera.resolution = Config.PICTURE_RESOLUTION
 
@@ -216,9 +217,15 @@ class PhotoboothApp(object):
             scaled_photo = pygame.transform.scale(photo, (frame_width, frame_height))
             print_surface.blit(scaled_photo, (frame_x, frame_y))
 
-        photo_filename = "%s/%d.jpg" % (Config.TARGET_DIR, time.time())
+        photo_filename = self.generate_photo_filename()
         pygame.image.save(print_surface, photo_filename)
         subprocess.call(['/usr/bin/lp', photo_filename])
+
+    def generate_photo_filename(self):
+        target_dir = os.path.expanduser(Config.TARGET_DIR)
+        picture = "%s.jpg" % time.time()
+        filename = os.path.join(target_dir, picture)
+        return os.path.normpath(filename)
 
     def on_render(self):
         self.reset_background()
@@ -249,11 +256,11 @@ class PhotoboothApp(object):
 
         self.stage += 1
 
-    def on_cleanup(self):
+    def cleanup(self):
         GPIO.cleanup()
         pygame.quit()
 
-    def on_execute(self):
+    def launch_app(self):
         if not self.on_init():
             self._running = False
 
@@ -262,9 +269,9 @@ class PhotoboothApp(object):
                 self.on_event(event)
             self.limit_cpu_usage()
             self.on_render()
-        self.on_cleanup()
+        self.cleanup()
 
 
-if __name__ == "__main__" :
-    theApp = PhotoboothApp()
-    theApp.on_execute()
+if __name__ == "__main__":
+    photo_app = PhotoboothApp()
+    photo_app.launch_app()
