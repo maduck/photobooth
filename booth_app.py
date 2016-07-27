@@ -30,7 +30,6 @@ class Config(object):
 
 
 class PhotoboothApp(object):
-    stages = ('GREETING', 'PHOTO 1', 'PHOTO 2', 'PHOTO 3', 'PHOTO 4', 'FAREWELL')
 
     def __init__(self):
         self._running = True
@@ -118,16 +117,13 @@ class PhotoboothApp(object):
                 background.blit(background_image, (x, y))
         return background
 
-    def fill_photo_space(self, photo_files=None):
-        if not photo_files:
-            photo_files = (None, None, None, None)
-
+    def fill_photo_space(self):
         all_photos = pygame.Surface(self.size)
 
-        for i, photo in enumerate(photo_files):
-            if not photo:
-                photo = "images/sample%d.png" % (i + 1)
-            self.insert_single_photo(all_photos, photo, i)
+        for i in range(4):
+            photo_number = (i + 1)
+            photo_filename = "images/sample%d.png" % photo_number
+            self.insert_single_photo(all_photos, photo_filename, i)
 
         all_photos.set_colorkey(Colors.BLACK)
         return all_photos
