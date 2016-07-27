@@ -1,4 +1,5 @@
 import subprocess
+import sys
 import time
 import picamera
 import pygame
@@ -63,7 +64,6 @@ class PhotoboothApp(object):
                 return
             pygame.display.flip()
             time.sleep(0.1)
-
 
     def on_init(self):
         pygame.init()
@@ -144,11 +144,11 @@ class PhotoboothApp(object):
         pygame.display.flip()
         time.sleep(2)
         self.camera.start_preview()
-        self.reset_background()
+        self.reset_background(white_borders=True)
         countdown_seconds = 5
         for count in range(countdown_seconds, 0, -1):
-           self.camera.annotate_text = str(count)
-           time.sleep(1)
+            self.camera.annotate_text = str(count)
+            time.sleep(1)
         self.camera.annotate_text = ""
 
         photo_filename = '%s/photo_%d.jpg' % (Config.TEMP_DIR, number)
@@ -159,6 +159,7 @@ class PhotoboothApp(object):
     def on_event(self, event):
         if event.type in (pygame.QUIT, pygame.KEYDOWN):
             self._running = False
+            sys.exit(0)
         """if event.type in (pygame.QUIT, ):
             self._running = False
         elif event.type == pygame.KEYDOWN:
@@ -183,9 +184,17 @@ class PhotoboothApp(object):
         y = (self.height - font_height) / 2
         self._canvas.blit(font_label, (x, y))
 
-    def reset_background(self):
+    def reset_background(self, white_borders=False):
         self._canvas.blit(self._background, (0, 0))
         self._canvas.blit(self._photo_space, (0, 0))
+        if white_borders:
+            photo_height = Config.PICTURE_RESOLUTION[1]
+            rect_height = int((self.height - photo_height) / 2)
+            rect_size = (self.width, rect_height)
+            border_rect = pygame.Surface(rect_size)
+            border_rect.fill(Colors.WHITE)
+            self._canvas.blit(border_rect, (0, 0))
+            self._canvas.blit(border_rect, (0, rect_height + photo_height))
         pygame.display.flip()
 
     def print_photos(self):
@@ -203,7 +212,6 @@ class PhotoboothApp(object):
 
             frame_x = 0 if number % 2 == 0 else (width_gap + frame_width)
             frame_y = 0 if number < 2 else (height_gap + frame_height)
-            #print 50 * "=", "inserting photo number %d into coords (%d | %d)" % (number, frame_x, frame_y)
 
             scaled_photo = pygame.transform.scale(photo, (frame_width, frame_height))
             print_surface.blit(scaled_photo, (frame_x, frame_y))
