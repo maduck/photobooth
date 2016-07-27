@@ -264,6 +264,7 @@ class PhotoboothApp(object):
             self.photos = []
 
             time.sleep(10)
+            self._photo_space = self.fill_photo_space()
             self.stage = -1
 
         if self.stage == 0:
