@@ -55,11 +55,11 @@ class PhotoboothApp(object):
             f = open("runtime.id", "r")
             last_runtime_id = int(f.read())
             f.close()
-        except (IOError, OSError):
+        except (IOError, OSError, ValueError):
             pass
         f = open("runtime.id", "w")
         self.runtime_id = last_runtime_id + 1
-        f.write(self.runtime_id)
+        f.write(str(self.runtime_id))
         f.close()
 
     def create_photo_directory(self):
@@ -188,13 +188,6 @@ class PhotoboothApp(object):
         if event.type in (pygame.QUIT, pygame.KEYDOWN):
             self._running = False
             sys.exit(0)
-        """if event.type in (pygame.QUIT, ):
-            self._running = False
-        elif event.type == pygame.KEYDOWN:
-            if self.stages[self.stage] == "FAREWELL":
-                self._running = False
-            else:
-                self.stage += 1"""
 
     def limit_cpu_usage(self):
         self.clock.tick(Config.MAX_FPS)
