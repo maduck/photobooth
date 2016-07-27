@@ -34,9 +34,11 @@ class PhotoboothApp(object):
 
     def __init__(self):
         self._running = True
+        self.runtime_id = 0
         self._canvas = None
         self._background = None
         self._photo_space = None
+        self.target_dir = None
         self.stage = 0
         self.size = self.width, self.height = 1024, 768
         self.font = None
@@ -44,6 +46,29 @@ class PhotoboothApp(object):
         self.photos = []
         self.clock = pygame.time.Clock()
         self._init_gpio()
+        self._acquire_new_runtime_id()
+        self.create_photo_directory()
+
+    def _acquire_new_runtime_id(self):
+        last_runtime_id = 0
+        try:
+            f = open("runtime.id", "r")
+            last_runtime_id = int(f.read())
+            f.close()
+        except (IOError, OSError):
+            pass
+        f = open("runtime.id", "w")
+        self.runtime_id = last_runtime_id + 1
+        f.write(self.runtime_id)
+        f.close()
+
+    def create_photo_directory(self):
+        base_dir = os.path.expanduser(Config.TARGET_DIR)
+        runtime_dir = "photos-%04d" % self.runtime_id
+        self.target_dir = os.path.join(base_dir, runtime_dir)
+        while os.path.exists(self.target_dir):
+            self._acquire_new_runtime_id()
+        os.mkdir(self.target_dir)
 
     def _init_gpio(self):
         GPIO.setmode(GPIO.BCM)
@@ -82,7 +107,6 @@ class PhotoboothApp(object):
         self._running = True
         self.font = pygame.font.Font('fonts/concourse.ttf', 115)
         pygame.mouse.set_visible(False)
-        #logging.debug('Cameras: %r' % pygame.camera.list_cameras())
 
         return self._running
 
@@ -223,9 +247,8 @@ class PhotoboothApp(object):
         subprocess.call([Config.PRINTING_COMMAND, photo_filename])
 
     def generate_photo_filename(self):
-        target_dir = os.path.expanduser(Config.TARGET_DIR)
-        picture = "%s.jpg" % time.time()
-        filename = os.path.join(target_dir, picture)
+        picture = "%d.jpg" % time.time()
+        filename = os.path.join(self.target_dir, picture)
         return os.path.normpath(filename)
 
     def on_render(self):
