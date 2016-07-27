@@ -24,6 +24,9 @@ class Config(object):
     LED_PIN = 26
     MAX_FPS = 60
     PICTURE_RESOLUTION = (1280, 853)
+    PRINTING_COMMAND = '/usr/bin/lp'
+    PRINTER_DPI = 300
+    PRINTER_SIZE = [6, 4]
 
 
 class PhotoboothApp(object):
@@ -198,28 +201,26 @@ class PhotoboothApp(object):
             self._canvas.blit(border_rect, (0, rect_height + photo_height))
         pygame.display.flip()
 
-    def print_photos(self):
-        PRINTER_DPI = 300
-        PRINTER_SIZE = [6, 4]
-        image_size = width, height = [size * PRINTER_DPI for size in PRINTER_SIZE]
+    def render_and_save_printer_photo(self, photo_filename):
+        image_size = width, height = [size * Config.PRINTER_DPI for size in Config.PRINTER_SIZE]
         print_surface = pygame.Surface(image_size)
         print_surface.fill(Colors.WHITE)
         for number, photo in enumerate(self.photos):
             width_gap = int(width / 100 * 2)
             height_gap = int(height / 100 * 2)
 
-            frame_width = int((width - width_gap)/2)
-            frame_height = int((height - height_gap)/2)
+            frame_width = int((width - width_gap) / 2)
+            frame_height = int((height - height_gap) / 2)
 
             frame_x = 0 if number % 2 == 0 else (width_gap + frame_width)
             frame_y = 0 if number < 2 else (height_gap + frame_height)
 
             scaled_photo = pygame.transform.scale(photo, (frame_width, frame_height))
             print_surface.blit(scaled_photo, (frame_x, frame_y))
-
-        photo_filename = self.generate_photo_filename()
         pygame.image.save(print_surface, photo_filename)
-        subprocess.call(['/usr/bin/lp', photo_filename])
+
+    def print_photo(self, photo_filename):
+        subprocess.call([Config.PRINTING_COMMAND, photo_filename])
 
     def generate_photo_filename(self):
         target_dir = os.path.expanduser(Config.TARGET_DIR)
@@ -241,7 +242,9 @@ class PhotoboothApp(object):
         def farewell():
             self.render_text("Vielen Dank! Drucke... ", bg_color=Colors.ORANGE)
             pygame.display.flip()
-            self.print_photos()
+            photo_filename = self.generate_photo_filename()
+            self.render_and_save_printer_photo(photo_filename)
+            self.print_photo(photo_filename)
             self.photos = []
 
             time.sleep(10)
