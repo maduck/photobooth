@@ -109,7 +109,7 @@ class PhotoboothApp(object):
         self._background = self.fill_background()
         self._photo_space = self.fill_photo_space()
         self._running = True
-        self.font = pygame.font.Font('fonts/concourse.ttf', 115)
+        self.font = pygame.font.Font('fonts/kenyan coffee bd.ttf', 115)
         pygame.mouse.set_visible(False)
 
         return self._running
