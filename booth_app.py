@@ -234,6 +234,7 @@ class PhotoboothApp(object):
             frame_y = 0 if number < 2 else (height_gap + frame_height)
 
             scaled_photo = pygame.transform.scale(photo, (frame_width, frame_height))
+            scaled_photo = pygame.transform.flip(scaled_photo, xbool=True, ybool=False)
             print_surface.blit(scaled_photo, (frame_x, frame_y))
         pygame.image.save(print_surface, photo_filename)
 
