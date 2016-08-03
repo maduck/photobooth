@@ -1,3 +1,5 @@
+# -*- coding: utf8 -*-
+
 import os
 import subprocess
 import sys
@@ -88,6 +90,7 @@ class PhotoboothApp(object):
                 return
             pygame.display.flip()
             time.sleep(0.1)
+            self.parse_events()
 
     def on_init(self):
         pygame.init()
@@ -176,26 +179,34 @@ class PhotoboothApp(object):
         self.camera.stop_preview()
         self.insert_single_photo(self._photo_space, photo_filename, number-1)
 
-    def on_event(self, event):
-        if event.type in (pygame.QUIT, pygame.KEYDOWN):
-            self._running = False
-            sys.exit(0)
+    def parse_events(self):
+        for event in pygame.event.get():
+            if event.type in (pygame.QUIT, pygame.KEYDOWN):
+                self._running = False
+                sys.exit(0)
 
     def limit_cpu_usage(self):
         self.clock.tick(self.config.getfloat("MAX_FPS"))
 
     def render_text(self, text, bg_color):
-        font_label = self.font.render(text, True, Colors.WHITE)
-        font_width = font_label.get_width()
-        font_height = font_label.get_height()
+        text_lines = text.split('\n')
+        font_width = 0
+        font_height = 0
+        labels = []
+        for line in text_lines:
+            font_width = max(font_width, self.font.size(line)[0])
+            font_height += self.font.size(line)[1]
+            labels.append(self.font.render(line, True, Colors.WHITE))
         background_width = font_width + 10 * font_width / 100
         background_height = font_height + 10 * font_height / 100
         x = (self.width - background_width) / 2
         y = (self.height - background_height) / 2
         rounded_rect(self._canvas, (x, y, background_width, background_height), bg_color, radius=0.2)
-        x = (self.width - font_width) / 2
-        y = (self.height - font_height) / 2
-        self._canvas.blit(font_label, (x, y))
+        start_height = y + 5 * font_height / 100
+        for i, label in enumerate(labels):
+            label_x = (self.width - label.get_width()) / 2
+            label_y = start_height + i * label.get_height()
+            self._canvas.blit(label, (label_x, label_y))
 
     def reset_background(self, white_borders=False):
         self._canvas.blit(self._background, (0, 0))
@@ -244,14 +255,14 @@ class PhotoboothApp(object):
 
         def greeting():
             self.photos = []
-            self.render_text("Bereit?", bg_color=Colors.ORANGE)
+            self.render_text(u"Bereit?\nKnopf drücken!", bg_color=Colors.ORANGE)
             pygame.display.flip()
             self.enable_led(True)
             self.wait_for_button()
             self.enable_led(False)
 
         def farewell():
-            self.render_text("Vielen Dank! Drucke... ", bg_color=Colors.ORANGE)
+            self.render_text(u"Vielen Dank!\nDrucke... ", bg_color=Colors.ORANGE)
             pygame.display.flip()
             photo_filename = self.generate_photo_filename()
             self.render_and_save_printer_photo(photo_filename)
@@ -280,8 +291,7 @@ class PhotoboothApp(object):
             self._running = False
 
         while self._running:
-            for event in pygame.event.get():
-                self.on_event(event)
+            self.parse_events()
             self.limit_cpu_usage()
             self.on_render()
         self.cleanup()
