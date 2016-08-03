@@ -45,42 +45,40 @@ class PhotoboothApp(object):
         self.photos = []
         self.clock = pygame.time.Clock()
         self._init_gpio()
-        self._acquire_new_runtime_id()
-        self.create_photo_directory()
+        self._get_last_runtime_id()
+        self.get_current_photo_directory()
 
-    def _acquire_new_runtime_id(self):
-        last_runtime_id = 0
+    def _get_last_runtime_id(self):
+        self.runtime_id = 0
         try:
             f = open("runtime.id", "r")
-            last_runtime_id = int(f.read())
+            self.runtime_id = int(f.read())
             f.close()
         except (IOError, OSError, ValueError):
             pass
+
+    def _acquire_new_runtime_id(self):
+        self.runtime_id += 1
         f = open("runtime.id", "w")
-        self.runtime_id = last_runtime_id + 1
         f.write(str(self.runtime_id))
         f.close()
 
-    def is_valid_photo_directory(self, path):
-        validity_checks = (
-            os.path.exists,
-            os.path.isdir,
-            os.listdir,
-        )
-        for check in validity_checks:
-            if not check(path):
-                return False
-        return True
+    def create_valid_photo_directory(self):
+        if not os.path.exists(self.target_dir):
+            os.mkdir(self.target_dir)
+            return True
+        if os.path.isdir(self.target_dir):
+            return not os.listdir(self.target_dir)
+        return False
 
-    def create_photo_directory(self):
-        self.generate_runtime_dir()
-        while not self.is_valid_photo_directory(self.target_dir):
+    def get_current_photo_directory(self):
+        self.generate_runtime_dirname()
+        while not self.create_valid_photo_directory():
             print "Directory %s already in use, creating next one." % self.target_dir
             self._acquire_new_runtime_id()
-            self.generate_runtime_dir(base_dir)
-        os.mkdir(self.target_dir)
+            self.generate_runtime_dirname()
 
-    def generate_runtime_dir(self):
+    def generate_runtime_dirname(self):
         base_dir = os.path.expanduser(Config.TARGET_DIR)
         runtime_dir = "photos-%04d" % self.runtime_id
         self.target_dir = os.path.join(base_dir, runtime_dir)
