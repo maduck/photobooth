@@ -73,15 +73,15 @@ class PhotoboothApp(object):
         return True
 
     def create_photo_directory(self):
-        base_dir = os.path.expanduser(Config.TARGET_DIR)
-        self.generate_runtime_dir(base_dir)
+        self.generate_runtime_dir()
         while not self.is_valid_photo_directory(self.target_dir):
             print "Directory %s already in use, creating next one." % self.target_dir
             self._acquire_new_runtime_id()
             self.generate_runtime_dir(base_dir)
         os.mkdir(self.target_dir)
 
-    def generate_runtime_dir(self, base_dir):
+    def generate_runtime_dir(self):
+        base_dir = os.path.expanduser(Config.TARGET_DIR)
         runtime_dir = "photos-%04d" % self.runtime_id
         self.target_dir = os.path.join(base_dir, runtime_dir)
 
