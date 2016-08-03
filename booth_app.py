@@ -7,6 +7,8 @@ import pygame
 from pygame_helpers import rounded_rect
 import RPi.GPIO as GPIO
 
+from config import Config
+
 
 class Colors(object):
     WHITE = (255, 255, 255)
@@ -17,19 +19,8 @@ class Colors(object):
     DARK_GRAY = (1, 1, 1)
 
 
-class Config(object):
-    TEMP_DIR = '/dev/shm'
-    TARGET_DIR = '~/photos'
-    SWITCH_PIN = 4
-    LED_PIN = 26
-    MAX_FPS = 60
-    PICTURE_RESOLUTION = (1280, 853)
-    PRINTING_COMMAND = '/usr/bin/lp'
-    PRINTER_DPI = 300
-    PRINTER_SIZE = [6, 4]
-
-
 class PhotoboothApp(object):
+    config = Config()
 
     def __init__(self):
         self._running = True
@@ -51,7 +42,7 @@ class PhotoboothApp(object):
     def _get_last_runtime_id(self):
         self.runtime_id = 0
         try:
-            f = open("runtime.id", "r")
+            f = open(self.config.get("RUNTIME_ID_FILE"), "r")
             self.runtime_id = int(f.read())
             f.close()
         except (IOError, OSError, ValueError):
@@ -59,7 +50,7 @@ class PhotoboothApp(object):
 
     def _acquire_new_runtime_id(self):
         self.runtime_id += 1
-        f = open("runtime.id", "w")
+        f = open(self.config.get("RUNTIME_ID_FILE"), "w")
         f.write(str(self.runtime_id))
         f.close()
 
@@ -74,19 +65,18 @@ class PhotoboothApp(object):
     def get_current_photo_directory(self):
         self.generate_runtime_dirname()
         while not self.create_valid_photo_directory():
-            print "Directory %s already in use, creating next one." % self.target_dir
             self._acquire_new_runtime_id()
             self.generate_runtime_dirname()
 
     def generate_runtime_dirname(self):
-        base_dir = os.path.expanduser(Config.TARGET_DIR)
+        base_dir = os.path.expanduser(self.config.get("TARGET_DIR"))
         runtime_dir = "photos-%04d" % self.runtime_id
         self.target_dir = os.path.join(base_dir, runtime_dir)
 
     def _init_gpio(self):
         GPIO.setmode(GPIO.BCM)
-        GPIO.setup(Config.SWITCH_PIN, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-        GPIO.setup(Config.LED_PIN, GPIO.OUT)
+        GPIO.setup(self.config.getint("SWITCH_PIN"), GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+        GPIO.setup(self.config.getint("LED_PIN"), GPIO.OUT)
         self.enable_led(False)
 
     def _init_camera(self):
@@ -94,14 +84,14 @@ class PhotoboothApp(object):
         self.camera.annotate_text_size = 128
         self.camera.led = False
         self.camera.vflip = True
-        self.camera.resolution = Config.PICTURE_RESOLUTION
+        self.camera.resolution = (self.config.getint("picture_width"), self.config.getint("picture_height"))
 
     def enable_led(self, mode):
-        GPIO.output(Config.LED_PIN, int(not mode))
+        GPIO.output(self.config.getint("LED_PIN"), int(not mode))
 
     def wait_for_button(self):
         while True:
-            button_pressed = GPIO.input(Config.SWITCH_PIN)
+            button_pressed = GPIO.input(self.config.getint("SWITCH_PIN"))
             if button_pressed:
                 return
             pygame.display.flip()
@@ -189,7 +179,7 @@ class PhotoboothApp(object):
             time.sleep(1)
         self.camera.annotate_text = ""
 
-        photo_filename = '%s/photo_%d.jpg' % (Config.TEMP_DIR, number)
+        photo_filename = '%s/photo_%d.jpg' % (self.config.get("TEMP_DIR"), number)
         self.camera.capture(photo_filename)
         self.camera.stop_preview()
         self.insert_single_photo(self._photo_space, photo_filename, number-1)
@@ -200,7 +190,7 @@ class PhotoboothApp(object):
             sys.exit(0)
 
     def limit_cpu_usage(self):
-        self.clock.tick(Config.MAX_FPS)
+        self.clock.tick(self.config.getfloat("MAX_FPS"))
 
     def render_text(self, text, bg_color):
         font_label = self.font.render(text, True, Colors.WHITE)
@@ -219,7 +209,7 @@ class PhotoboothApp(object):
         self._canvas.blit(self._background, (0, 0))
         self._canvas.blit(self._photo_space, (0, 0))
         if white_borders:
-            photo_height = Config.PICTURE_RESOLUTION[1]
+            photo_height = self.config.getint("picture_height")
             rect_height = int((self.height - photo_height) / 2)
             rect_size = (self.width, rect_height)
             border_rect = pygame.Surface(rect_size)
@@ -229,8 +219,10 @@ class PhotoboothApp(object):
         pygame.display.flip()
 
     def render_and_save_printer_photo(self, photo_filename):
-        image_size = width, height = [size * Config.PRINTER_DPI for size in Config.PRINTER_SIZE]
-        print_surface = pygame.Surface(image_size)
+        dpi = self.config.getfloat("printer_dpi")
+        width = dpi * self.config.getfloat("printer_width_inch")
+        height = dpi * self.config.getfloat("printer_height_inch")
+        print_surface = pygame.Surface((width, height))
         print_surface.fill(Colors.WHITE)
         for number, photo in enumerate(self.photos):
             width_gap = int(width / 100 * 2)
@@ -243,12 +235,12 @@ class PhotoboothApp(object):
             frame_y = 0 if number < 2 else (height_gap + frame_height)
 
             scaled_photo = pygame.transform.scale(photo, (frame_width, frame_height))
-            scaled_photo = pygame.transform.flip(scaled_photo, xbool=True, ybool=False)
+            scaled_photo = pygame.transform.flip(scaled_photo, True, False)
             print_surface.blit(scaled_photo, (frame_x, frame_y))
         pygame.image.save(print_surface, photo_filename)
 
     def print_photo(self, photo_filename):
-        subprocess.call([Config.PRINTING_COMMAND, photo_filename])
+        subprocess.call([self.config.get("PRINTING_COMMAND"), photo_filename])
 
     def generate_photo_filename(self):
         picture = "%d.jpg" % time.time()
