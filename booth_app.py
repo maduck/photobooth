@@ -23,8 +23,6 @@ class PhotoboothApp(object):
         self._background = None
         self._photo_space = None
         self.target_dir = None
-        self.stage = 0
-        self.size = self.screen_width, self.screen_height = 1024, 768
         self.font = None
         self._init_camera()
         self.photos = []
@@ -32,7 +30,6 @@ class PhotoboothApp(object):
         self._init_gpio()
         self._get_last_runtime_id()
         self.get_current_photo_directory()
-        self.stages = (self.stage_greeting, self.stage_photos, self.stage_farewell)
 
         pygame.init()
         self.limit_cpu_usage()
@@ -40,7 +37,6 @@ class PhotoboothApp(object):
         self._canvas = pygame.display.set_mode((0, 0), display_mode)
         self.screen_width = pygame.display.Info().current_w
         self.screen_height = pygame.display.Info().current_h
-        self.size = (self.screen_width, self.screen_height)
         self._background = self.fill_background()
         self._photo_space = self.fill_photo_space()
         self._running = True
@@ -115,7 +111,7 @@ class PhotoboothApp(object):
         return background
 
     def fill_photo_space(self):
-        all_photos = pygame.Surface(self.size)
+        all_photos = pygame.Surface((self.screen_width, self.screen_height))
 
         for photo_number in range(1, 5):
             photo_filename = "images/sample%d.png" % photo_number
