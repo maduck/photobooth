@@ -61,11 +61,22 @@ class PhotoboothApp(object):
         f.write(str(self.runtime_id))
         f.close()
 
+    def is_valid_photo_directory(self, path):
+        validity_checks = (
+            os.path.exists,
+            os.path.isdir,
+            os.listdir,
+        )
+        for check in validity_checks:
+            if not check(path):
+                return False
+        return True
+
     def create_photo_directory(self):
         base_dir = os.path.expanduser(Config.TARGET_DIR)
         self.generate_runtime_dir(base_dir)
-        while os.path.exists(self.target_dir):
-            print "Directory %s already exists, calling next one." % self.target_dir
+        while not self.is_valid_photo_directory(self.target_dir):
+            print "Directory %s already in use, creating next one." % self.target_dir
             self._acquire_new_runtime_id()
             self.generate_runtime_dir(base_dir)
         os.mkdir(self.target_dir)
