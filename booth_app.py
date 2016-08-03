@@ -33,6 +33,18 @@ class PhotoboothApp(object):
         self._get_last_runtime_id()
         self.get_current_photo_directory()
 
+        pygame.init()
+        display_mode = pygame.HWSURFACE | pygame.DOUBLEBUF | pygame.FULLSCREEN
+        self._canvas = pygame.display.set_mode((0, 0), display_mode)
+        self.width = pygame.display.Info().current_w
+        self.height = pygame.display.Info().current_h
+        self.size = (self.width, self.height)
+        self._background = self.fill_background()
+        self._photo_space = self.fill_photo_space()
+        self._running = True
+        self.font = pygame.font.Font(self.config.get('font_filename'), self.config.getint('font_size'))
+        pygame.mouse.set_visible(False)
+
     def _get_last_runtime_id(self):
         self.runtime_id = 0
         try:
@@ -93,18 +105,7 @@ class PhotoboothApp(object):
             self.parse_events()
 
     def on_init(self):
-        pygame.init()
-        display_mode = pygame.HWSURFACE | pygame.DOUBLEBUF | pygame.FULLSCREEN
 
-        self._canvas = pygame.display.set_mode((0, 0), display_mode)
-        self.width = pygame.display.Info().current_w
-        self.height = pygame.display.Info().current_h
-        self.size = (self.width, self.height)
-        self._background = self.fill_background()
-        self._photo_space = self.fill_photo_space()
-        self._running = True
-        self.font = pygame.font.Font('fonts/kenyan coffee bd.ttf', 115)
-        pygame.mouse.set_visible(False)
 
         return self._running
 
@@ -287,9 +288,6 @@ class PhotoboothApp(object):
         pygame.quit()
 
     def launch_app(self):
-        if not self.on_init():
-            self._running = False
-
         while self._running:
             self.parse_events()
             self.limit_cpu_usage()
