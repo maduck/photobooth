@@ -25,9 +25,9 @@
 1. Set up automatic login and program start
   * create file /etc/systemd/system/getty@tty1.service.d/autologin.conf, with the following content:
 
-        [Service]
-        ExecStart=
-        ExecStart=-/sbin/agetty --autologin "photobooth" %I
+        `[Service]`  
+        `ExecStart=`  
+        `ExecStart=-/sbin/agetty --autologin "photobooth" %I`
 
   * Create file /home/photobooth/.bash_profile, with the following content:
 
