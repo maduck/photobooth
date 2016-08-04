@@ -195,8 +195,8 @@ class PhotoboothApp(object):
             text_lines.append(self.font.render(line, True, Colors.WHITE))
 
         top_and_bottom_margin_percentage = 10
-        background_width = overall_width * (1 + top_and_bottom_margin_percentage / 100)
-        background_height = overall_height * (1 + top_and_bottom_margin_percentage / 100)
+        background_width = overall_width * (100 + top_and_bottom_margin_percentage) / 100
+        background_height = overall_height * (100 + top_and_bottom_margin_percentage) / 100
         x = (self.screen_width - background_width) / 2
         y = (self.screen_height - background_height) / 2
         rounded_rect(self._canvas, (x, y, background_width, background_height), bg_color, radius=0.2)
