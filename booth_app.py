@@ -106,7 +106,7 @@ class PhotoboothApp(object):
 
     def fill_background(self):
         background = pygame.Surface((self.screen_width, self.screen_height))
-        background_image = pygame.image.load("images/background.png").convert()
+        background_image = pygame.image.load(self.config.get("background_tile_image")).convert()
         for y in range(0, self.screen_height, background_image.get_height()):
             for x in range(0, self.screen_width, background_image.get_width()):
                 background.blit(background_image, (x, y))
@@ -165,8 +165,7 @@ class PhotoboothApp(object):
         time.sleep(2)
         self.camera.start_preview()
         self.redraw_background(white_borders=True)
-        countdown_seconds = 5
-        for count in range(countdown_seconds, 0, -1):
+        for count in range(self.config.getint("countdown_seconds"), 0, -1):
             self.camera.annotate_text = str(count)
             time.sleep(1)
         self.camera.annotate_text = ""
@@ -187,26 +186,26 @@ class PhotoboothApp(object):
         self.clock.tick(self.config.getfloat("MAX_FPS"))
 
     def render_text(self, text, bg_color):
-        text_lines = text.split('\n')
-        font_width = 0
-        font_height = 0
-        labels = []
-        for line in text_lines:
-            font_width = max(font_width, self.font.size(line)[0])
-            font_height += self.font.size(line)[1]
-            labels.append(self.font.render(line, True, Colors.WHITE))
+        overall_width = 0
+        overall_height = 0
+        text_lines = []
+        for line in text.split('\n'):
+            overall_width = max(overall_width, self.font.size(line)[0])
+            overall_height += self.font.size(line)[1]
+            text_lines.append(self.font.render(line, True, Colors.WHITE))
 
         top_and_bottom_margin_percentage = 10
-        background_width = font_width * (1 + top_and_bottom_margin_percentage / 100)
-        background_height = font_height * (1 + top_and_bottom_margin_percentage / 100)
+        background_width = overall_width * (1 + top_and_bottom_margin_percentage / 100)
+        background_height = overall_height * (1 + top_and_bottom_margin_percentage / 100)
         x = (self.screen_width - background_width) / 2
         y = (self.screen_height - background_height) / 2
         rounded_rect(self._canvas, (x, y, background_width, background_height), bg_color, radius=0.2)
-        start_height = y + 5 * font_height / 100
-        for i, label in enumerate(labels):
-            label_x = (self.screen_width - label.get_width()) / 2
-            label_y = start_height + i * label.get_height()
-            self._canvas.blit(label, (label_x, label_y))
+        text_margin_percentage = top_and_bottom_margin_percentage / 2
+        start_height = y + text_margin_percentage * overall_height / 100
+        for i, line in enumerate(text_lines):
+            label_x = (self.screen_width - line.get_width()) / 2
+            label_y = start_height + i * line.get_height()
+            self._canvas.blit(line, (label_x, label_y))
 
     def redraw_background(self, white_borders=False):
         self._canvas.blit(self._background, (0, 0))
