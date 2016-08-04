@@ -4,10 +4,12 @@ import os
 import subprocess
 import sys
 import time
+
 import picamera
+import RPi.GPIO as GPIO
+
 import pygame
 from pygame_helpers import rounded_rect
-import RPi.GPIO as GPIO
 
 from config import Config
 from colors import Colors
@@ -115,28 +117,30 @@ class PhotoboothApp(object):
 
         for photo_number in range(1, 5):
             photo_filename = "images/sample%d.png" % photo_number
-            self.insert_single_photo(all_photos, photo_filename, photo_number)
+            self.put_photo_on_surface(all_photos, photo_filename, photo_number)
 
         all_photos.set_colorkey(Colors.BLACK)
         return all_photos
 
-    def insert_single_photo(self, surface, filename, number):
-        width_gap = int(self.screen_width / 100 * 5)
-        height_gap = int(self.screen_height / 100 * 5)
+    def put_photo_on_surface(self, surface, filename, number):
+        gap_percentage = 5
+        width_gap = int(self.screen_width / 100 * gap_percentage)
+        height_gap = int(self.screen_height / 100 * gap_percentage)
 
         frame_width = int((self.screen_width - 3 * width_gap) / 2)
         frame_height = int((self.screen_height - 3 * height_gap) / 2)
 
-        frame_x = width_gap if number % 2 != 0 else (2*width_gap + frame_width)
-        frame_y = height_gap if number <= 2 else (2*height_gap + frame_height)
+        frame_x = width_gap if number % 2 != 0 else (2 * width_gap + frame_width)
+        frame_y = height_gap if number <= 2 else (2 * height_gap + frame_height)
 
-        photo = self.prepare_photo_for_display(filename)
+        photo = self.load_and_scale_photo_for_display(filename)
 
         surface.blit(photo, (frame_x, frame_y))
 
-    def prepare_photo_for_display(self, photo_filename):
-        width_gap = int(self.screen_width / 100 * 5)
-        height_gap = int(self.screen_height / 100 * 5)
+    def load_and_scale_photo_for_display(self, photo_filename):
+        gap_percentage = 5
+        width_gap = int(self.screen_width / 100 * gap_percentage)
+        height_gap = int(self.screen_height / 100 * gap_percentage)
         frame_width = int((self.screen_width - 3 * width_gap) / 2)
         frame_height = int((self.screen_height - 3 * height_gap) / 2)
         frame_surface = pygame.Surface((frame_width, frame_height))
@@ -146,8 +150,8 @@ class PhotoboothApp(object):
         self.photos.append(photo_surface)
         photo_width_gap = 0
         photo_height_gap = (frame_height / 100 * 8)
-        photo_width = frame_width - 2*photo_width_gap
-        photo_height = frame_height - 2*photo_height_gap
+        photo_width = frame_width - 2 * photo_width_gap
+        photo_height = frame_height - 2 * photo_height_gap
 
         scaled_surface = pygame.transform.scale(photo_surface, (photo_width, photo_height))
         frame_surface.blit(scaled_surface, (photo_width_gap, photo_height_gap))
@@ -170,7 +174,7 @@ class PhotoboothApp(object):
         photo_filename = '%s/photo_%d.jpg' % (self.config.get("TEMP_DIR"), number)
         self.camera.capture(photo_filename)
         self.camera.stop_preview()
-        self.insert_single_photo(self._photo_space, photo_filename, number)
+        self.put_photo_on_surface(self._photo_space, photo_filename, number)
 
     def parse_events(self):
         for event in pygame.event.get():
@@ -191,8 +195,10 @@ class PhotoboothApp(object):
             font_width = max(font_width, self.font.size(line)[0])
             font_height += self.font.size(line)[1]
             labels.append(self.font.render(line, True, Colors.WHITE))
-        background_width = font_width + 10 * font_width / 100
-        background_height = font_height + 10 * font_height / 100
+
+        top_and_bottom_margin_percentage = 10
+        background_width = font_width * (1 + top_and_bottom_margin_percentage / 100)
+        background_height = font_height * (1 + top_and_bottom_margin_percentage / 100)
         x = (self.screen_width - background_width) / 2
         y = (self.screen_height - background_height) / 2
         rounded_rect(self._canvas, (x, y, background_width, background_height), bg_color, radius=0.2)
