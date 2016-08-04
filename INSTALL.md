@@ -25,14 +25,18 @@
 1. Set up automatic login and program start
   * create file /etc/systemd/system/getty@tty1.service.d/autologin.conf, with the following content:
 
-    > `[Service]`
-    > `ExecStart=`
-    > `ExecStart=-/sbin/agetty --autologin "photobooth" %I`
+        [Service]
+        ExecStart=
+        ExecStart=-/sbin/agetty --autologin "photobooth" %I
 
   * Create file /home/photobooth/.bash_profile, with the following content:
-    `startx`
+
+        startx
+
   * Change the file owner to our photobooth user:
-    `chown photobooth.photobooth /home/photobooth/.bash_profile`
+
+        chown photobooth.photobooth /home/photobooth/.bash_profile
+
   * Create a script for executing the photobooth app, named /home/photobooth/start_app.sh, with the following content:
 
     > `sleep 5`
