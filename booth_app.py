@@ -19,7 +19,6 @@ class PhotoboothApp(object):
     config = Config()
 
     def __init__(self):
-        self._running = True
         self.runtime_id = 0
         self._canvas = None
         self._background = None
@@ -28,12 +27,12 @@ class PhotoboothApp(object):
         self.font = None
         self._init_camera()
         self.photos = []
-        self.clock = pygame.time.Clock()
         self._init_gpio()
         self._get_last_runtime_id()
         self.get_current_photo_directory()
 
         pygame.init()
+        self.clock = pygame.time.Clock()
         self.limit_cpu_usage()
         display_mode = pygame.HWSURFACE | pygame.DOUBLEBUF | pygame.FULLSCREEN
         self._canvas = pygame.display.set_mode((0, 0), display_mode)

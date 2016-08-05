@@ -38,3 +38,19 @@ def rounded_rect(surface, rect, color, radius=0.4):
     rectangle.fill((255, 255, 255, alpha), special_flags=pygame.BLEND_RGBA_MIN)
 
     return surface.blit(rectangle, pos)
+
+
+class PygameGUI(object):
+    display_mode = pygame.HWSURFACE | pygame.DOUBLEBUF | pygame.FULLSCREEN
+
+    def __init__(self):
+        self.clock = pygame.time.Clock()
+        self.limit_cpu_usage()
+        self._canvas = pygame.display.set_mode((0, 0), self.display_mode)
+        self.screen_width = pygame.display.Info().current_w
+        self.screen_height = pygame.display.Info().current_h
+        self.font = pygame.font.Font(self.config.get('font_filename'), self.config.getint('font_size'))
+        pygame.mouse.set_visible(False)
+
+    def limit_cpu_usage(self):
+        self.clock.tick(self.config.getfloat("MAX_FPS"))
