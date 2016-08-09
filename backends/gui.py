@@ -1,6 +1,15 @@
 import pygame
 
 
+class Colors(object):
+    WHITE = (255, 255, 255)
+    BLACK = (0, 0, 0)
+    RED = (255, 0, 0)
+
+    ORANGE = (200, 50, 20)
+    DARK_GRAY = (1, 1, 1)
+
+
 def rounded_rect(surface, rect, color, radius=0.4):
     """
     rounded_rect(surface,rect,color,radius=0.4)

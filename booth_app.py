@@ -9,10 +9,9 @@ import picamera
 import RPi.GPIO as GPIO
 
 import pygame
-from backends.gui import rounded_rect
+from backends.gui import rounded_rect, Colors
 
 from config import Config
-from colors import Colors
 
 
 class PhotoboothApp(object):
