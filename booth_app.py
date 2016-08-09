@@ -9,7 +9,7 @@ import picamera
 import RPi.GPIO as GPIO
 
 import pygame
-from gui import rounded_rect
+from backends.gui import rounded_rect
 
 from config import Config
 from colors import Colors
