@@ -2,9 +2,8 @@ import importlib
 
 
 def get_class_name_for_backend(backend_type):
-    class_name = "{}{}{}".format(
-        backend_type[0].upper(),
-        backend_type[1:],
+    class_name = "{}{}".format(
+        backend_type.capitalize(),
         'Backend',
     )
     return class_name
