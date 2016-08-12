@@ -1,18 +1,16 @@
 # -*- coding: utf8 -*-
 
 import os
-import subprocess
 import sys
 import time
 
-import picamera
 import RPi.GPIO as GPIO
-
+import picamera
 import pygame
-import backends
-from backends.gui import rounded_rect, Colors
 
-from config import Config
+import backends
+from libs.config import Config
+from libs.gui import rounded_rect, Colors
 
 
 class PhotoboothApp(object):
