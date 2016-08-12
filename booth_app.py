@@ -227,8 +227,9 @@ class PhotoboothApp(object):
         print_surface = pygame.Surface((width, height))
         print_surface.fill(Colors.WHITE)
         for number, photo in enumerate(self.photos):
-            width_gap = int(width / 100 * 2)
-            height_gap = int(height / 100 * 2)
+            gap_percentage = 2
+            width_gap = int(width / 100 * gap_percentage)
+            height_gap = int(height / 100 * gap_percentage)
 
             frame_width = int((width - width_gap) / 2)
             frame_height = int((height - height_gap) / 2)
