@@ -1,10 +1,10 @@
 import subprocess
-from base_printing import BasePrintingBackend
+from base_saving import BaseOutputBackend
 
 
-class PrintingBackend(BasePrintingBackend):
+class OutputBackend(BaseOutputBackend):
     def __init__(self, config):
         self.config = config
 
-    def printout(self, filename):
+    def export(self, filename):
         subprocess.call([self.config.get("command"), filename])
