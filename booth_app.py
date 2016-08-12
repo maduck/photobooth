@@ -9,6 +9,7 @@ import picamera
 import RPi.GPIO as GPIO
 
 import pygame
+import backends
 from backends.gui import rounded_rect, Colors
 
 from config import Config
@@ -26,6 +27,7 @@ class PhotoboothApp(object):
         self.font = None
         self._init_camera()
         self.photos = []
+        self.printer = backends.acquire_backend("output", "line_printer", self.config)
         self._init_gpio()
         self._get_last_runtime_id()
         self.get_current_photo_directory()
@@ -239,9 +241,6 @@ class PhotoboothApp(object):
             print_surface.blit(scaled_photo, (frame_x, frame_y))
         pygame.image.save(print_surface, photo_filename)
 
-    def print_photo(self, photo_filename):
-        subprocess.call([self.config.get("PRINTING_COMMAND"), photo_filename])
-
     def generate_photo_filename(self):
         picture = "%d.jpg" % time.time()
         filename = os.path.join(self.target_dir, picture)
@@ -262,7 +261,7 @@ class PhotoboothApp(object):
         pygame.display.flip()
         photo_filename = self.generate_photo_filename()
         self.render_and_save_printer_photo(photo_filename)
-        self.print_photo(photo_filename)
+        self.printer.export(photo_filename)
         self.photos = []
 
         time.sleep(10)
