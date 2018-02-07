@@ -1,3 +1,5 @@
+[![Code Health](https://landscape.io/github/maduck/photobooth/master/landscape.svg?style=plastic)](https://landscape.io/github/maduck/photobooth/master)
+
 # photobooth
 Yet another photo booth app, for a DIY Raspberry Pi project.
 
