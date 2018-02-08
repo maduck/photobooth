@@ -1,4 +1,5 @@
 import time
+import pygame
 import RPi.GPIO as GPIO # NOQA pylint: disable=I0011,F0401
 from base_input import BaseInputBackend
 
